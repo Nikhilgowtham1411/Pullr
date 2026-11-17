@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - pullr-app-upload
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
