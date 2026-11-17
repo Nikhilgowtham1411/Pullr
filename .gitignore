@@ -1,0 +1,12 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+build.log
+XSaver.apk
+XSaver.apk
+Pullr.apk
