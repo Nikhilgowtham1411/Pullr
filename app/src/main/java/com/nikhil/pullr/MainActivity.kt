@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
     private fun handleShare(intent: Intent?) {
         if (intent == null || intent.action != Intent.ACTION_SEND) return
         val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return
+        vm.tab = Tab.SAVED
         vm.input = text.trim()
         vm.fetch()
     }

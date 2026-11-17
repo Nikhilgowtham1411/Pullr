@@ -95,6 +95,18 @@ object DownloadStore {
         save()
     }
 
+    /** Removes failed and cancelled downloads from the list. */
+    fun clearFailed() {
+        _items.update { list -> list.filter { it.status != Status.FAILED && it.status != Status.CANCELLED } }
+        save()
+    }
+
+    /** Removes finished downloads from the list (the files stay in the gallery). */
+    fun clearDone() {
+        _items.update { list -> list.filter { it.status != Status.DONE } }
+        save()
+    }
+
     // ---- cancelling ----------------------------------------------------------------------
 
     fun requestCancel(id: Long) {

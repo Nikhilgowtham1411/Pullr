@@ -15,6 +15,11 @@ class MainViewModel : ViewModel() {
 
     var input by mutableStateOf("")
 
+    /** Which of the three bottom sections is showing. */
+    var tab by mutableStateOf(Tab.SAVED)
+
+    var showSettings by mutableStateOf(false)
+
     /** How many links are being looked up right now (several can run at the same time). */
     var loading by mutableIntStateOf(0)
         private set
@@ -36,13 +41,14 @@ class MainViewModel : ViewModel() {
         if (text.isEmpty()) return
         input = ""
         error = null
+        tab = Tab.SAVED
         loading++
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
-                    val tweet = MediaFetcher.load(text)
-                    LinkStore.add(tweet)
-                    tweet
+                    val post = MediaFetcher.load(text)
+                    LinkStore.add(post)
+                    post
                 }
             }
             loading--
