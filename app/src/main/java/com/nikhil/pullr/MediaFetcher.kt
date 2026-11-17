@@ -122,7 +122,7 @@ object MediaFetcher {
             fetch(xId)
         } else {
             val url = firstUrl(text) ?: throw FetchException("I couldn't find a link in that. Paste a video link.")
-            EngineResolver.load(url)
+            if (InstagramResolver.isInstagram(url)) InstagramResolver.load(url) else EngineResolver.load(url)
         }
         if (post.media.isEmpty()) throw FetchException("No video, photo or GIF found at this link.")
         return post

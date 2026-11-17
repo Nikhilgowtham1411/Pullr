@@ -15,14 +15,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -32,23 +33,19 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -61,7 +58,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -69,6 +65,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -79,37 +77,54 @@ import coil.compose.AsyncImage
 
 /** The three sections at the bottom of the screen. */
 enum class Tab(val label: String, val icon: Int) {
-    SAVED("Saved links", R.drawable.ic_tab_saved),
+    SAVED("Saved", R.drawable.ic_tab_saved),
     DOWNLOADING("Downloading", R.drawable.ic_tab_downloading),
     DOWNLOADED("Downloaded", R.drawable.ic_tab_done),
 }
 
-private val Violet = Color(0xFF7C5CFF)
-private val Pink = Color(0xFFFF4D9D)
-private val Mint = Color(0xFF2EE6A6)
-private val Ink = Color(0xFF0B0A12)
-private val Panel = Color(0xFF15141E)
-private val PanelHigh = Color(0xFF1E1C2A)
-private val Line = Color(0xFF2B2940)
-private val TextMain = Color(0xFFF2F0FA)
-private val TextDim = Color(0xFFA19EB8)
-private val Danger = Color(0xFFFF6B7A)
-private val Brand = Brush.horizontalGradient(listOf(Violet, Pink))
+private val Lime = Color(0xFFC8F135)
+private val OnLime = Color(0xFF10140A)
+private val Bg = Color(0xFF0B0B0C)
+private val Card = Color(0xFF151517)
+private val CardHigh = Color(0xFF212125)
+private val Line = Color(0xFF2A2A2F)
+private val TextMain = Color(0xFFF5F5F7)
+private val TextDim = Color(0xFF8E8E96)
+private val Danger = Color(0xFFFF6B6B)
+
+/** Poppins is bundled so the app looks the same on every phone, whatever system font is set. */
+private val Poppins = FontFamily(
+    Font(R.font.poppins_regular, FontWeight.Normal),
+    Font(R.font.poppins_medium, FontWeight.Medium),
+    Font(R.font.poppins_medium, FontWeight.SemiBold),
+    Font(R.font.poppins_bold, FontWeight.Bold),
+    Font(R.font.poppins_bold, FontWeight.ExtraBold),
+)
+
+private fun poppinsTypography(): Typography {
+    val b = Typography()
+    fun TextStyle.p() = copy(fontFamily = Poppins)
+    return Typography(
+        displayLarge = b.displayLarge.p(), displayMedium = b.displayMedium.p(), displaySmall = b.displaySmall.p(),
+        headlineLarge = b.headlineLarge.p(), headlineMedium = b.headlineMedium.p(), headlineSmall = b.headlineSmall.p(),
+        titleLarge = b.titleLarge.p(), titleMedium = b.titleMedium.p(), titleSmall = b.titleSmall.p(),
+        bodyLarge = b.bodyLarge.p(), bodyMedium = b.bodyMedium.p(), bodySmall = b.bodySmall.p(),
+        labelLarge = b.labelLarge.p(), labelMedium = b.labelMedium.p(), labelSmall = b.labelSmall.p(),
+    )
+}
 
 private val PullrColors = darkColorScheme(
-    primary = Violet,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFF2A2350),
+    primary = Lime,
+    onPrimary = OnLime,
+    primaryContainer = CardHigh,
     onPrimaryContainer = TextMain,
-    secondary = Pink,
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFF2A2350),
-    onSecondaryContainer = TextMain,
-    background = Ink,
+    secondary = Lime,
+    onSecondary = OnLime,
+    background = Bg,
     onBackground = TextMain,
-    surface = Panel,
+    surface = Card,
     onSurface = TextMain,
-    surfaceVariant = PanelHigh,
+    surfaceVariant = CardHigh,
     onSurfaceVariant = TextDim,
     outline = Line,
     error = Danger,
@@ -127,23 +142,17 @@ fun PullrScreen(
     val links by LinkStore.links.collectAsState()
     val activeCount = history.count { it.isActive }
 
-    MaterialTheme(colorScheme = PullrColors) {
+    MaterialTheme(colorScheme = PullrColors, typography = poppinsTypography()) {
         Scaffold(
-            containerColor = Ink,
+            containerColor = Bg,
             topBar = { TopBar(onSettings = { vm.showSettings = true }) },
             bottomBar = {
-                BottomTabs(
-                    selected = vm.tab,
-                    activeCount = activeCount,
-                    savedCount = links.size,
-                    onSelect = { vm.tab = it },
-                )
+                FloatingNav(selected = vm.tab, activeCount = activeCount, onSelect = { vm.tab = it })
             },
         ) { padding ->
             Box(
                 modifier = Modifier
                     .padding(padding)
-                    .consumeWindowInsets(padding)
                     .imePadding()
                     .fillMaxSize(),
             ) {
@@ -166,59 +175,88 @@ private fun TopBar(onSettings: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
+            .padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column {
-            Text("Pullr", style = TextStyle(brush = Brand, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold))
-            Text("Grab any video. Keep it.", fontSize = 13.sp, color = TextDim)
-        }
-        TextButton(onClick = onSettings) { Text("Settings", color = TextDim) }
-    }
-}
-
-@Composable
-private fun BottomTabs(selected: Tab, activeCount: Int, savedCount: Int, onSelect: (Tab) -> Unit) {
-    NavigationBar(containerColor = Panel, contentColor = TextMain, tonalElevation = 0.dp) {
-        Tab.values().forEach { tab ->
-            val badge = when (tab) {
-                Tab.DOWNLOADING -> activeCount
-                Tab.SAVED -> savedCount
-                else -> 0
-            }
-            NavigationBarItem(
-                selected = tab == selected,
-                onClick = { onSelect(tab) },
-                icon = {
-                    if (badge > 0) {
-                        BadgedBox(
-                            badge = {
-                                Badge(
-                                    containerColor = if (tab == Tab.DOWNLOADING) Pink else Violet,
-                                    contentColor = Color.White,
-                                ) { Text("$badge") }
-                            },
-                        ) { Icon(painterResource(tab.icon), tab.label) }
-                    } else {
-                        Icon(painterResource(tab.icon), tab.label)
-                    }
-                },
-                label = { Text(tab.label, fontSize = 12.sp) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.White,
-                    selectedTextColor = Color.White,
-                    indicatorColor = Color(0xFF3A2F7A),
-                    unselectedIconColor = TextDim,
-                    unselectedTextColor = TextDim,
-                ),
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("Pullr", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = TextMain)
+            Box(
+                Modifier
+                    .padding(start = 3.dp, bottom = 9.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(Lime),
             )
         }
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Card)
+                .clickable(onClick = onSettings),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(R.drawable.ic_settings), "Settings", tint = TextMain, modifier = Modifier.size(22.dp))
+        }
     }
 }
 
 @Composable
-private fun GradientButton(
+private fun FloatingNav(selected: Tab, activeCount: Int, onSelect: (Tab) -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Card)
+                .border(1.dp, Line, RoundedCornerShape(50))
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Tab.values().forEach { tab ->
+                val on = tab == selected
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(if (on) Lime else Color.Transparent)
+                        .clickable { onSelect(tab) }
+                        .padding(horizontal = if (on) 18.dp else 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box {
+                        Icon(
+                            painterResource(tab.icon),
+                            tab.label,
+                            tint = if (on) OnLime else TextDim,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        if (tab == Tab.DOWNLOADING && activeCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(if (on) OnLime else Lime),
+                            )
+                        }
+                    }
+                    if (on) Text(tab.label, color = OnLime, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LimeButton(
     text: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
@@ -229,35 +267,70 @@ private fun GradientButton(
         modifier = modifier
             .alpha(if (enabled) 1f else 0.5f)
             .clip(shape)
-            .background(Brand, shape)
+            .background(Lime)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 11.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, color = OnLime, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun SoftButton(text: String, color: Color = TextMain, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Box(
+        modifier = Modifier
+            .clip(shape)
+            .background(CardHigh)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, color = color, fontWeight = FontWeight.Medium, fontSize = 13.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Box(
+        modifier = Modifier
+            .clip(shape)
+            .background(if (selected) Lime else CardHigh)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text,
+            color = if (selected) OnLime else TextMain,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            fontSize = 13.sp,
+            maxLines = 1,
+        )
     }
 }
 
 @Composable
 private fun EmptyState(icon: Int, title: String, text: String, modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.padding(horizontal = 32.dp),
+        modifier = modifier.padding(horizontal = 36.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Box(
             modifier = Modifier
-                .size(84.dp)
+                .size(76.dp)
                 .clip(CircleShape)
-                .background(PanelHigh),
+                .background(Card),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = TextDim, modifier = Modifier.size(38.dp))
+            Icon(painterResource(icon), contentDescription = null, tint = Lime, modifier = Modifier.size(32.dp))
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(18.dp))
         Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextMain)
         Spacer(Modifier.height(6.dp))
-        Text(text, color = TextDim, fontSize = 14.sp, textAlign = TextAlign.Center)
+        Text(text, color = TextDim, fontSize = 14.sp, textAlign = TextAlign.Center, lineHeight = 21.sp)
     }
 }
 
@@ -275,14 +348,17 @@ private fun SavedTab(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            PasteCard(
+            PasteBar(
                 value = vm.input,
                 onValue = { vm.input = it },
-                showClear = vm.input.isNotEmpty() || vm.error != null,
+                onAdd = {
+                    focus.clearFocus()
+                    vm.fetch()
+                },
                 onPaste = {
                     val pasted = clipboard.getText()?.text
                     if (!pasted.isNullOrBlank()) {
@@ -291,10 +367,7 @@ private fun SavedTab(
                         vm.fetch()
                     }
                 },
-                onAdd = {
-                    focus.clearFocus()
-                    vm.fetch()
-                },
+                showClear = vm.input.isNotEmpty() || vm.error != null,
                 onClear = { vm.reset() },
             )
         }
@@ -304,8 +377,9 @@ private fun SavedTab(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp),
                 ) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Violet)
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Lime)
                     Text(
                         if (vm.loading == 1) "Reading the link…" else "Reading ${vm.loading} links…",
                         color = TextDim,
@@ -316,18 +390,32 @@ private fun SavedTab(
         }
 
         val err = vm.error
-        if (err != null) item { Text(err, color = Danger, fontSize = 14.sp) }
+        if (err != null) {
+            item {
+                Text(
+                    err,
+                    color = Danger,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0x22FF6B6B))
+                        .padding(14.dp),
+                )
+            }
+        }
 
         if (links.isEmpty() && vm.loading == 0) {
             item {
                 EmptyState(
                     icon = Tab.SAVED.icon,
-                    title = "No saved links yet",
-                    text = "Paste a link above, or tap Share in YouTube, Instagram, Facebook, X… and pick Pullr. " +
-                        "Pick \"Pullr · Quick save\" to download straight away.",
+                    title = "Nothing saved yet",
+                    text = "Paste a link above, or tap Share in Instagram, YouTube, Facebook, X… and pick Pullr. " +
+                        "\"Pullr · Quick save\" downloads straight away.",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 28.dp),
+                        .padding(vertical = 32.dp),
                 )
             }
         }
@@ -344,50 +432,76 @@ private fun SavedTab(
 }
 
 @Composable
-private fun PasteCard(
+private fun PasteBar(
     value: String,
     onValue: (String) -> Unit,
-    showClear: Boolean,
-    onPaste: () -> Unit,
     onAdd: () -> Unit,
+    onPaste: () -> Unit,
+    showClear: Boolean,
     onClear: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(24.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(Panel)
-            .border(1.dp, Line, shape)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text("Paste any video link", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextMain)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             value = value,
             onValueChange = onValue,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("youtube.com, instagram.com, facebook.com, x.com…") },
-            maxLines = 3,
-            shape = RoundedCornerShape(16.dp),
+            placeholder = { Text("Paste a video or photo link", color = TextDim) },
+            singleLine = true,
+            shape = RoundedCornerShape(50),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Violet,
+                focusedContainerColor = Card,
+                unfocusedContainerColor = Card,
+                focusedBorderColor = Lime,
                 unfocusedBorderColor = Line,
-                cursorColor = Violet,
+                cursorColor = Lime,
             ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { onAdd() }),
+            trailingIcon = {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 6.dp)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Lime)
+                        .clickable(onClick = onAdd),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(painterResource(R.drawable.ic_arrow), "Add link", tint = OnLime, modifier = Modifier.size(20.dp))
+                }
+            },
         )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = onPaste, shape = RoundedCornerShape(50)) { Text("Paste") }
-            GradientButton("Add link", Modifier.weight(1f), onClick = onAdd)
-            if (showClear) TextButton(onClick = onClear) { Text("Clear", color = TextDim) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(CardHigh)
+                    .clickable(onClick = onPaste)
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(painterResource(R.drawable.ic_paste), null, tint = Lime, modifier = Modifier.size(16.dp))
+                Text("Paste & save", color = TextMain, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+            }
+            if (showClear) SoftButton("Clear", TextDim, onClear)
         }
-        Text(
-            "YouTube · Instagram · Facebook · X · TikTok · Reddit · Vimeo and 1000+ more sites",
-            color = TextDim,
-            fontSize = 12.sp,
-        )
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            listOf("Instagram", "YouTube", "Facebook", "X", "TikTok", "Reddit", "Vimeo", "+1000 sites").forEach {
+                Text(
+                    it,
+                    color = TextDim,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .border(1.dp, Line, RoundedCornerShape(50))
+                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                )
+            }
+        }
     }
 }
 
@@ -403,13 +517,13 @@ private fun LinkCard(
     val handle = if (post.authorHandle.isNotEmpty()) "@${post.authorHandle}" else ""
     val who = listOf(post.authorName, handle).filter { it.isNotEmpty() }.joinToString("  ")
     val title = post.text.ifBlank { post.pageUrl }
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(26.dp)
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Panel)
+            .background(Card)
             .border(1.dp, Line, shape),
     ) {
         Box {
@@ -419,48 +533,53 @@ private fun LinkCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(PanelHigh),
+                    .aspectRatio(16f / 10f)
+                    .background(CardHigh),
             )
-            Box(
+            Text(
+                if (multi) "${post.source} · ${post.media.size} items" else post.source,
+                color = OnLime,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(12.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(Color(0xB3000000))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                Text(post.source, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
+                    .background(Lime)
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+            )
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(10.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
-                    .background(Color(0xB3000000))
-                    .clickable(onClick = onRemove)
-                    .padding(horizontal = 11.dp, vertical = 7.dp),
+                    .background(Color(0xCC000000))
+                    .clickable(onClick = onRemove),
+                contentAlignment = Alignment.Center,
             ) {
-                Text("✕", color = Color.White, fontSize = 14.sp)
+                Icon(painterResource(R.drawable.ic_close), "Remove", tint = Color.White, modifier = Modifier.size(16.dp))
             }
         }
 
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                title,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                color = TextMain,
-            )
-            if (who.isNotEmpty()) Text(who, color = TextDim, fontSize = 13.sp)
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    title,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = TextMain,
+                )
+                if (who.isNotEmpty()) Text(who, color = TextDim, fontSize = 12.sp, maxLines = 1)
+            }
 
             if (multi) {
                 val total = post.media.sumOf { it.best().size }
                 val extra = if (total > 0) " · ${formatSize(total)}" else ""
-                GradientButton(
-                    text = "Download all (${post.media.size})$extra",
+                LimeButton(
+                    text = "Download all ${post.media.size}$extra",
                     modifier = Modifier.fillMaxWidth(),
                     onClick = onDownloadAll,
                 )
@@ -481,7 +600,7 @@ private fun LinkCard(
     }
 }
 
-private fun chipLabel(v: Variant): String =
+private fun pillLabel(v: Variant): String =
     if (v.size > 0) "${v.label} · ${formatSize(v.size)}" else v.label
 
 @Composable
@@ -493,7 +612,9 @@ private fun MediaBlock(
     doneLabel: String?,
     onDownload: (Variant) -> Unit,
 ) {
-    var selected by rememberSaveable(postId, index) { mutableStateOf(media.variants.indexOf(media.best()).coerceAtLeast(0)) }
+    var selected by rememberSaveable(postId, index) {
+        mutableStateOf(media.variants.indexOf(media.best()).coerceAtLeast(0))
+    }
     val variant = media.variants[selected.coerceIn(0, media.variants.lastIndex)]
     val kindLabel = when (media.kind) {
         MediaKind.VIDEO -> "Video"
@@ -501,52 +622,45 @@ private fun MediaBlock(
         MediaKind.PHOTO -> "Photo"
         MediaKind.AUDIO -> "Audio"
     }
+    val sizeText = if (variant.size > 0) " · ${formatSize(variant.size)}" else ""
+    val buttonText = when {
+        variant.isAudio -> "MP3$sizeText"
+        doneLabel != null -> "Again$sizeText"
+        media.kind == MediaKind.PHOTO -> "Save photo$sizeText"
+        else -> "Download$sizeText"
+    }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
         if (multi) {
             AsyncImage(
                 model = media.thumbnail,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(PanelHigh),
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(CardHigh),
             )
         }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                if (multi) "$kindLabel ${index + 1}" else "Choose quality",
-                fontWeight = FontWeight.SemiBold,
-                color = TextMain,
-            )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (multi) Text("$kindLabel ${index + 1}", fontWeight = FontWeight.SemiBold, color = TextMain, fontSize = 14.sp)
             if (media.variants.size > 1) {
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     media.variants.forEachIndexed { i, v ->
-                        FilterChip(
-                            selected = i == selected,
-                            onClick = { selected = i },
-                            label = { Text(chipLabel(v)) },
-                        )
+                        Pill(pillLabel(v), selected = i == selected, onClick = { selected = i })
                     }
                 }
             }
-            if (variant.size > 0) {
-                Text("Uses about ${formatSize(variant.size)} of data", color = TextDim, fontSize = 13.sp)
-            }
-            GradientButton(
-                text = when {
-                    doneLabel != null -> "Download again"
-                    variant.isAudio -> "Download MP3"
-                    else -> "Download"
-                },
+            LimeButton(
+                text = buttonText,
+                modifier = if (multi) Modifier else Modifier.fillMaxWidth(),
                 onClick = { onDownload(variant) },
             )
             if (doneLabel != null) {
-                Text("Saved before: $doneLabel. Pick another quality to get it again.", color = TextDim, fontSize = 12.sp)
+                Text("Saved before ($doneLabel)", color = TextDim, fontSize = 11.sp)
             }
         }
     }
@@ -561,30 +675,26 @@ private fun DownloadingTab(items: List<HistoryItem>) {
         EmptyState(
             icon = Tab.DOWNLOADING.icon,
             title = "Nothing downloading",
-            text = "Videos you download show up here with live progress. Cancel or retry any of them.",
+            text = "Files you download show up here with live progress. Cancel or retry any of them.",
             modifier = Modifier.fillMaxSize(),
         )
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("${items.count { it.isActive }} active", color = TextDim, fontSize = 14.sp)
-                Row {
-                    if (items.any { it.isActive }) {
-                        TextButton(onClick = { DownloadStore.cancelAll() }) { Text("Cancel all") }
-                    }
-                    if (items.any { !it.isActive }) {
-                        TextButton(onClick = { DownloadStore.clearFailed() }) { Text("Clear failed", color = TextDim) }
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (items.any { it.isActive }) SoftButton("Cancel all", Danger) { DownloadStore.cancelAll() }
+                    if (items.any { !it.isActive }) SoftButton("Clear failed", TextDim) { DownloadStore.clearFailed() }
                 }
             }
         }
@@ -600,66 +710,61 @@ private fun DownloadingTab(items: List<HistoryItem>) {
 }
 
 @Composable
+private fun Thumb(url: String?, size: Int = 72) {
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .size(size.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardHigh),
+    )
+}
+
+@Composable
 private fun ProgressCard(item: HistoryItem, onCancel: () -> Unit, onRetry: () -> Unit, onRemove: () -> Unit) {
     val failed = item.status == Status.FAILED
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(22.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Panel)
+            .background(Card)
             .border(1.dp, Line, shape)
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AsyncImage(
-            model = item.thumb,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(PanelHigh),
-        )
+        Thumb(item.thumb)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                item.title,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.SemiBold,
-                color = TextMain,
-            )
+            Text(item.title, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = TextMain)
             Text(
                 statusText(item),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 color = if (failed) Danger else TextDim,
             )
             if (item.status == Status.DOWNLOADING && item.progress > 0) {
                 LinearProgressIndicator(
                     progress = item.progress / 100f,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(50)),
-                    color = Violet,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)),
+                    color = Lime,
                     trackColor = Line,
                 )
             } else if (item.status == Status.DOWNLOADING || item.status == Status.FETCHING) {
                 LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(50)),
-                    color = Violet,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)),
+                    color = Lime,
                     trackColor = Line,
                 )
             }
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (item.isActive) {
-                    TextButton(onClick = onCancel) { Text("Cancel", color = Danger) }
+                    SoftButton("Cancel", Danger, onCancel)
                 } else {
-                    if (item.url != null) TextButton(onClick = onRetry) { Text("Retry") }
-                    TextButton(onClick = onRemove) { Text("Remove", color = TextDim) }
+                    if (item.url != null) SoftButton("Retry", Lime, onRetry)
+                    SoftButton("Remove", TextDim, onRemove)
                 }
             }
         }
@@ -689,24 +794,24 @@ private fun DownloadedTab(items: List<HistoryItem>) {
         EmptyState(
             icon = Tab.DOWNLOADED.icon,
             title = "No downloads yet",
-            text = "Finished videos appear here. They are also in your gallery under Movies/Pullr.",
+            text = "Finished files appear here. They are also in your gallery under Movies/Pullr and Pictures/Pullr.",
             modifier = Modifier.fillMaxSize(),
         )
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("${items.size} saved", color = TextDim, fontSize = 14.sp)
-                TextButton(onClick = { DownloadStore.clearDone() }) { Text("Clear list", color = TextDim) }
+                SoftButton("Clear list", TextDim) { DownloadStore.clearDone() }
             }
         }
         items(items, key = { it.id }) { item ->
@@ -722,7 +827,7 @@ private fun DownloadedTab(items: List<HistoryItem>) {
 
 @Composable
 private fun DoneCard(item: HistoryItem, onOpen: () -> Unit, onShare: () -> Unit, onDelete: () -> Unit) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(22.dp)
     val meta = listOfNotNull(
         if (item.bytes > 0) formatSize(item.bytes) else null,
         folderLabel(item.kind),
@@ -731,33 +836,19 @@ private fun DoneCard(item: HistoryItem, onOpen: () -> Unit, onShare: () -> Unit,
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Panel)
+            .background(Card)
             .border(1.dp, Line, shape)
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AsyncImage(
-            model = item.thumb,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(PanelHigh),
-        )
+        Thumb(item.thumb)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                item.title,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.SemiBold,
-                color = TextMain,
-            )
-            Text(meta, color = Mint, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                GradientButton("Open", onClick = onOpen)
-                TextButton(onClick = onShare) { Text("Share") }
-                TextButton(onClick = onDelete) { Text("Delete", color = Danger) }
+            Text(item.title, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = TextMain)
+            Text(meta, color = Lime, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                LimeButton("Open", onClick = onOpen)
+                SoftButton("Share", onClick = onShare)
+                SoftButton("Delete", Danger, onDelete)
             }
         }
     }
@@ -807,62 +898,77 @@ private fun SettingsDialog(
 
     AlertDialog(
         onDismissRequest = { vm.showSettings = false },
-        containerColor = Panel,
+        containerColor = Card,
+        shape = RoundedCornerShape(28.dp),
         title = { Text("Settings", fontWeight = FontWeight.Bold, color = TextMain) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text("Notification panel", fontWeight = FontWeight.SemiBold, color = TextMain)
                         Text(
                             "Adds a panel to your notification shade. Copy a link, tap Paste & save and it " +
-                                "appears in Saved links. No need to open the app.",
+                                "appears in Saved. No need to open the app.",
                             color = TextDim,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
                         )
                     }
-                    Switch(checked = vm.panelOn, onCheckedChange = onPanelToggle)
+                    Switch(
+                        checked = vm.panelOn,
+                        onCheckedChange = onPanelToggle,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = OnLime,
+                            checkedTrackColor = Lime,
+                            uncheckedThumbColor = TextDim,
+                            uncheckedTrackColor = CardHigh,
+                            uncheckedBorderColor = Line,
+                        ),
+                    )
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Background downloads", fontWeight = FontWeight.SemiBold, color = TextMain)
                     if (vm.batteryOk) {
-                        Text("Allowed. Downloads keep going with the screen off.", color = Mint, fontSize = 13.sp)
+                        Text("Allowed. Downloads keep going with the screen off.", color = Lime, fontSize = 12.sp)
                     } else {
                         Text(
                             "Some phones pause apps to save battery. Allow Pullr so big downloads finish.",
                             color = TextDim,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
                         )
-                        OutlinedButton(onClick = onBatterySettings) { Text("Allow") }
+                        SoftButton("Allow", Lime, onBatterySettings)
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Downloader engine", fontWeight = FontWeight.SemiBold, color = TextMain)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Video engine", fontWeight = FontWeight.SemiBold, color = TextMain)
                     Text(
                         "Version $version. Sites change often, so it updates itself daily. " +
                             "If a link stops working, update it now.",
                         color = TextDim,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
                     )
                     val message = vm.engineMessage
-                    if (message != null) Text(message, color = Violet, fontSize = 13.sp)
-                    OutlinedButton(onClick = { vm.updateEngine(context) }, enabled = !vm.engineBusy) {
-                        Text(if (vm.engineBusy) "Updating…" else "Update engine")
+                    if (message != null) Text(message, color = Lime, fontSize = 12.sp)
+                    SoftButton(if (vm.engineBusy) "Updating…" else "Update engine", Lime) {
+                        if (!vm.engineBusy) vm.updateEngine(context)
                     }
                 }
 
                 Text(
-                    "Only save videos you own or have permission to download, and follow each site's terms.",
+                    "Only save content you own or have permission to download, and follow each site's terms.",
                     color = TextDim,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp,
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { vm.showSettings = false }) { Text("Done") } },
+        confirmButton = { TextButton(onClick = { vm.showSettings = false }) { Text("Done", color = Lime, fontWeight = FontWeight.Bold) } },
     )
 }
