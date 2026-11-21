@@ -18,15 +18,24 @@ object EngineResolver {
 
     fun load(url: String): Post {
         Engine.ensureReady()
-        val request = YoutubeDLRequest(url)
-            .addOption("--dump-single-json")
-            .addOption("--no-warnings")
-            .addOption("--no-playlist")
-            .addOption("--playlist-end", MAX_ENTRIES)
-            .addOption("--socket-timeout", 20)
+        fun run(): String {
+            val request = YoutubeDLRequest(url)
+                .addOption("--dump-single-json")
+                .addOption("--no-warnings")
+                .addOption("--no-playlist")
+                .addOption("--playlist-end", MAX_ENTRIES)
+                .addOption("--socket-timeout", 20)
+            return YoutubeDL.getInstance().execute(request, null, null).out
+        }
 
         val out = try {
-            YoutubeDL.getInstance().execute(request, null, null).out
+            try {
+                run()
+            } catch (e: YoutubeDLException) {
+                // A stale yt-dlp is the usual reason a working site suddenly fails: update once and retry.
+                if (!Engine.updateForRetry()) throw e
+                run()
+            }
         } catch (e: YoutubeDLException) {
             throw FetchException(Engine.friendlyError(e.message))
         } catch (e: YoutubeDL.CanceledException) {

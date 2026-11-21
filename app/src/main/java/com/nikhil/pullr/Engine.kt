@@ -28,9 +28,16 @@ object Engine {
     @Volatile
     private var started = false
 
+    @Volatile
+    private var appCtx: Context? = null
+
+    @Volatile
+    private var lastForcedUpdate = 0L
+
     fun start(app: Context) {
         if (started) return
         started = true
+        appCtx = app.applicationContext
         thread(name = "engine-init", isDaemon = true) {
             try {
                 YoutubeDL.getInstance().init(app)
@@ -42,6 +49,22 @@ object Engine {
             }
             // Sites change their pages all the time; yt-dlp ships fixes within days. Refresh once a day.
             if (failure == null) autoUpdate(app)
+        }
+    }
+
+    /**
+     * Called when a link fails: pulls the newest yt-dlp once (at most every 10 minutes) so the retry
+     * can succeed even if the bundled yt-dlp is stale. Returns true when a newer version was installed.
+     */
+    fun updateForRetry(): Boolean {
+        val app = appCtx ?: return false
+        val now = System.currentTimeMillis()
+        if (now - lastForcedUpdate < 10 * 60 * 1000L) return false
+        lastForcedUpdate = now
+        return try {
+            YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.STABLE) == YoutubeDL.UpdateStatus.DONE
+        } catch (e: Throwable) {
+            false
         }
     }
 
@@ -92,6 +115,14 @@ object Engine {
     /** Turns yt-dlp's raw error text into something a person can act on. */
     fun friendlyError(raw: String?): String {
         val text = raw.orEmpty()
+        val message = explain(text)
+        val detail = (text.lines().lastOrNull { it.trim().startsWith("ERROR") }
+            ?: text.lines().lastOrNull { it.isNotBlank() }
+            ?: "").removePrefix("ERROR:").trim().take(140)
+        return if (detail.isNotEmpty() && !message.contains(detail.take(40))) "$message\n($detail)" else message
+    }
+
+    private fun explain(text: String): String {
         val lower = text.lowercase()
         return when {
             "login" in lower || "log in" in lower || "cookies" in lower || "rate-limit" in lower ->
