@@ -82,15 +82,15 @@ enum class Tab(val label: String, val icon: Int) {
     DOWNLOADED("Downloaded", R.drawable.ic_tab_done),
 }
 
-private val Lime = Color(0xFFC8F135)
-private val OnLime = Color(0xFF10140A)
-private val Bg = Color(0xFF0B0B0C)
-private val Card = Color(0xFF151517)
-private val CardHigh = Color(0xFF212125)
-private val Line = Color(0xFF2A2A2F)
+private val Lime = Color(0xFFFF6B3D)
+private val OnLime = Color(0xFF1A0C06)
+private val Bg = Color(0xFF0E0B0D)
+private val Card = Color(0xFF1A1517)
+private val CardHigh = Color(0xFF2A2124)
+private val Line = Color(0xFF362B2F)
 private val TextMain = Color(0xFFF5F5F7)
 private val TextDim = Color(0xFF8E8E96)
-private val Danger = Color(0xFFFF6B6B)
+private val Danger = Color(0xFFFF5A5F)
 
 /** Poppins is bundled so the app looks the same on every phone, whatever system font is set. */
 private val Poppins = FontFamily(
@@ -400,7 +400,7 @@ private fun SavedTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0x22FF6B6B))
+                        .background(Color(0x22FF4D4D))
                         .padding(14.dp),
                 )
             }
