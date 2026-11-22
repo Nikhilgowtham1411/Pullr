@@ -445,7 +445,7 @@ private fun PasteBar(
             value = value,
             onValueChange = onValue,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Paste a video or photo link", color = TextDim) },
+            placeholder = { Text("Paste any video, photo or audio link", color = TextDim) },
             singleLine = true,
             shape = RoundedCornerShape(50),
             colors = OutlinedTextFieldDefaults.colors(

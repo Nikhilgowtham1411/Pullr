@@ -93,12 +93,14 @@ object MediaFetcher {
      */
     fun fileName(post: Post, index: Int, variant: Variant, kind: MediaKind): String {
         val audio = kind == MediaKind.AUDIO || variant.isAudio
+        val directExt = if (variant.selector == null && post.source != "X") WebScraper.ext(variant.url).takeIf { it.length in 2..5 } else null
         val ext = when {
+            directExt != null -> directExt
             audio -> "mp3"
             kind == MediaKind.PHOTO -> if (variant.selector == null) photoExtension(variant.url) else "jpg"
             else -> "mp4"
         }
-        val quality = if (kind == MediaKind.PHOTO) "" else "_" + variant.label.filter { it.isLetterOrDigit() }
+        val quality = if (kind == MediaKind.PHOTO || variant.label == "Original") "" else "_" + variant.label.filter { it.isLetterOrDigit() }
         if (post.source != "X") {
             val base = cleanName(post.text, 70).ifEmpty { cleanName(post.id, 40).ifEmpty { "video" } }
             val multi = if (post.media.size > 1) "_${index + 1}" else ""
@@ -122,10 +124,24 @@ object MediaFetcher {
             fetch(xId)
         } else {
             val url = firstUrl(text) ?: throw FetchException("I couldn't find a link in that. Paste a video link.")
-            if (InstagramResolver.isInstagram(url)) InstagramResolver.load(url) else EngineResolver.load(url)
+            resolveAnyLink(url)
         }
         if (post.media.isEmpty()) throw FetchException("No video, photo or GIF found at this link.")
         return post
+    }
+
+    /** Direct file links, then the engine (1000+ sites), then a scan of the page itself for videos, audio and images. */
+    private fun resolveAnyLink(url: String): Post {
+        WebScraper.direct(url)?.let { return it }
+        val engineError: FetchException = try {
+            val post = if (InstagramResolver.isInstagram(url)) InstagramResolver.load(url) else EngineResolver.load(url)
+            if (post.media.isNotEmpty()) return post
+            FetchException("No video, photo or GIF found at this link.")
+        } catch (e: FetchException) {
+            e
+        }
+        WebScraper.scrape(url)?.let { return it }
+        throw engineError
     }
 
     /** Looks up every file's size in parallel so the app can say "1280p · 5.0 MB" before downloading. */

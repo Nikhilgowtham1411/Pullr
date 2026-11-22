@@ -776,6 +776,7 @@ class DownloadService : Service() {
             readTimeout = 15_000
             setRequestProperty("User-Agent", MediaFetcher.USER_AGENT)
             setRequestProperty("Accept-Encoding", "identity")
+            runCatching { URL(url) }.getOrNull()?.let { setRequestProperty("Referer", "${it.protocol}://${it.host}/") }
         }
 
     // ---- network -------------------------------------------------------------------------
@@ -800,6 +801,8 @@ class DownloadService : Service() {
     }
 
     private fun mimeFor(item: HistoryItem): String = when {
+        mimeForExtension(item.fileName.substringAfterLast('.', "")) != "application/octet-stream" ->
+            mimeForExtension(item.fileName.substringAfterLast('.', ""))
         item.kind == MediaKind.AUDIO -> "audio/mpeg"
         item.kind != MediaKind.PHOTO -> "video/mp4"
         item.fileName.endsWith(".png", ignoreCase = true) -> "image/png"
