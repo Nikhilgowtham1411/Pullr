@@ -494,6 +494,7 @@ class DownloadService : Service() {
                 .addOption("-N", 4)
                 .addOption("-o", "${tmp.absolutePath}/%(id)s.%(ext)s")
             if (entry.item > 0) request.addOption("--playlist-items", entry.item)
+            WebSniffer.referers[pageUrl]?.let { request.addOption("--referer", it) }
             if (audio) {
                 request.addOption("-f", "ba/b")
                     .addOption("-x")
@@ -776,7 +777,8 @@ class DownloadService : Service() {
             readTimeout = 15_000
             setRequestProperty("User-Agent", MediaFetcher.USER_AGENT)
             setRequestProperty("Accept-Encoding", "identity")
-            runCatching { URL(url) }.getOrNull()?.let { setRequestProperty("Referer", "${it.protocol}://${it.host}/") }
+            (WebSniffer.referers[url] ?: runCatching { URL(url) }.getOrNull()?.let { "${it.protocol}://${it.host}/" })
+                ?.let { setRequestProperty("Referer", it) }
         }
 
     // ---- network -------------------------------------------------------------------------

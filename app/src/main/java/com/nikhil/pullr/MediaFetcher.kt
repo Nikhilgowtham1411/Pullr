@@ -140,7 +140,33 @@ object MediaFetcher {
         } catch (e: FetchException) {
             e
         }
-        WebScraper.scrape(url)?.let { return it }
+        // Page scan: real video/audio files found in the HTML win straight away.
+        val scraped = WebScraper.scrape(url)
+        if (scraped != null && scraped.post.media.any { it.kind == MediaKind.VIDEO || it.kind == MediaKind.AUDIO }) {
+            return scraped.post
+        }
+        // Many sites load the video with JavaScript: open the page in a hidden browser and catch the file.
+        WebSniffer.sniff(url)?.let { r ->
+            val host = try { java.net.URI(url).host?.removePrefix("www.") ?: "Web" } catch (e: Exception) { "Web" }
+            val thumb = scraped?.post?.media?.firstOrNull { it.kind == MediaKind.PHOTO }?.thumbnail
+            val items = r.videos.map { v ->
+                val hls = v.substringBefore('?').endsWith(".m3u8", true)
+                MediaItem(MediaKind.VIDEO, thumb,
+                    listOf(if (hls) Variant(v, "Stream", 0, 0L, selector = "bv*+ba/b") else Variant(v, "Original", 0)))
+            } + r.audios.map { MediaItem(MediaKind.AUDIO, null, listOf(Variant(it, "Original", 0))) }
+            return Post(
+                id = Integer.toHexString(url.hashCode()), authorName = "", authorHandle = "",
+                text = r.title.ifEmpty { host }, media = items, source = host, pageUrl = url,
+            )
+        }
+        // Pictures only: fine for a photo page, but on a video page they are just thumbnails.
+        if (scraped != null && !scraped.videoPage) return scraped.post
+        if (scraped != null) {
+            throw FetchException(
+                "Found the page but not the video file. It may need a login or age check, " +
+                    "be blocked in your region (try a VPN or Private DNS), or the player didn't start."
+            )
+        }
         throw engineError
     }
 

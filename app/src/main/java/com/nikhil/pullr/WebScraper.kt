@@ -55,7 +55,9 @@ object WebScraper {
         )
     }
 
-    fun scrape(pageUrl: String): Post? {
+    class Scraped(val post: Post, val videoPage: Boolean)
+
+    fun scrape(pageUrl: String): Scraped? {
         val html = fetchHtml(pageUrl) ?: return null
         val base = try { URL(pageUrl) } catch (e: Exception) { return null }
 
@@ -127,10 +129,14 @@ object WebScraper {
         if (media.isEmpty()) return null
 
         val host = hostOf(pageUrl)
-        return Post(
+        val low = html.lowercase()
+        val videoPage = "<video" in low || "og:video" in low || "content=\"video" in low || "m3u8" in low ||
+            "video-player" in low || "videoplayer" in low
+        val post = Post(
             id = Integer.toHexString(pageUrl.hashCode()), authorName = "", authorHandle = "",
             text = title.ifEmpty { host }, media = media, source = host, pageUrl = pageUrl,
         )
+        return Scraped(post, videoPage)
     }
 
     private fun bigSrcset(srcset: String?): String? =
