@@ -62,7 +62,7 @@ object Engine {
         if (now - lastForcedUpdate < 10 * 60 * 1000L) return false
         lastForcedUpdate = now
         return try {
-            YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.STABLE) == YoutubeDL.UpdateStatus.DONE
+            YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.NIGHTLY) == YoutubeDL.UpdateStatus.DONE
         } catch (e: Throwable) {
             false
         }
@@ -88,7 +88,7 @@ object Engine {
     fun update(app: Context): String {
         return try {
             ensureReady()
-            val status = YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.STABLE)
+            val status = YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.NIGHTLY)
             app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putLong(KEY_LAST_UPDATE, System.currentTimeMillis()).apply()
             when (status) {
@@ -105,7 +105,7 @@ object Engine {
             val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val last = prefs.getLong(KEY_LAST_UPDATE, 0L)
             if (System.currentTimeMillis() - last < UPDATE_EVERY_MS) return
-            YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.STABLE)
+            YoutubeDL.getInstance().updateYoutubeDL(app, YoutubeDL.UpdateChannel.NIGHTLY)
             prefs.edit().putLong(KEY_LAST_UPDATE, System.currentTimeMillis()).apply()
         } catch (e: Throwable) {
             // Offline or rate limited: try again next launch.

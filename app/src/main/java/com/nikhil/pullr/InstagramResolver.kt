@@ -33,29 +33,50 @@ object InstagramResolver {
             return EngineResolver.load(url)
         }
 
-        fromEmbed(code, url)?.let { return it }
-        fromPreviewTags(code, url)?.let { return it }
+        val isReel = Regex("""/(reel|reels|tv)/""").containsMatchIn(url)
+        fun hasVideo(p: Post) = p.media.any { it.kind == MediaKind.VIDEO }
 
+        // 1. Embed page. A full read (JSON) is trusted; a video is always good.
+        val embed = fromEmbed(code, url)
+        if (embed != null && (hasVideo(embed.post) || (embed.trusted && !isReel))) return embed.post
+
+        // 2. Preview tags: only worth it when they carry a real video file.
+        val preview = fromPreviewTags(code, url)
+        if (preview != null && hasVideo(preview)) return preview
+
+        // 3. Anything that only gave a preview picture is not the real file for a reel/video:
+        //    let the engine try (yt-dlp reads public reels and videos).
+        var engineError: FetchException? = null
         try {
-            return EngineResolver.load(url)
+            val p = EngineResolver.load(url)
+            if (p.media.isNotEmpty()) return p
         } catch (e: FetchException) {
-            throw FetchException(
-                "Instagram didn't show this post without a login. Try again in a minute, " +
-                    "or switch between Wi-Fi and mobile data (turn off VPN). Private accounts can't be saved."
-            )
+            engineError = e
         }
+
+        // 4. Picture-only fallback is fine for photo posts, never for reels.
+        if (!isReel) (embed?.post ?: preview)?.let { return it }
+
+        throw FetchException(
+            "Instagram didn't give the video without a login. Try again in a minute, " +
+                "or switch between Wi-Fi and mobile data (turn off VPN). Private accounts can't be saved." +
+                (engineError?.message?.let { "\n($it)" } ?: "")
+        )
     }
 
     // ---- 1. embed page -------------------------------------------------------------------
 
-    private fun fromEmbed(code: String, pageUrl: String): Post? {
+    private class Embed(val post: Post, val trusted: Boolean)
+
+    private fun fromEmbed(code: String, pageUrl: String): Embed? {
+        var fallback: Embed? = null
         for (path in listOf("p/$code/embed/captioned/", "p/$code/embed/")) {
             val html = get("https://www.instagram.com/$path", DESKTOP_UA) ?: continue
             val media = findMediaJson(html)
-            if (media != null) buildFromJson(media, code, pageUrl)?.let { return it }
-            buildFromRaw(html, code, pageUrl)?.let { return it }
+            if (media != null) buildFromJson(media, code, pageUrl)?.let { return Embed(it, true) }
+            if (fallback == null) buildFromRaw(html, code, pageUrl)?.let { fallback = Embed(it, false) }
         }
-        return null
+        return fallback
     }
 
     /** The embed page hides the post as JSON in a few different places depending on Instagram's mood. */
@@ -125,6 +146,8 @@ object InstagramResolver {
             }
         }
 
+        // A video whose file link is missing means the answer is incomplete: don't pass off its picture.
+        if (nodes.any { isVideoNode(it) && videoUrlOf(it).isEmpty() }) return null
         val items = nodes.mapNotNull { nodeToItem(it) }
         if (items.isEmpty()) return null
 
@@ -144,11 +167,17 @@ object InstagramResolver {
         )
     }
 
+    private fun videoUrlOf(n: JSONObject): String = n.optString("video_url").ifEmpty {
+        n.optJSONArray("video_versions")?.optJSONObject(0)?.optString("url").orEmpty()
+    }
+
+    private fun isVideoNode(n: JSONObject): Boolean =
+        n.optBoolean("is_video") || n.optString("__typename").contains("Video", ignoreCase = true) ||
+            n.optInt("media_type") == 2
+
     private fun nodeToItem(n: JSONObject): MediaItem? {
         val photo = bestImage(n)
-        val videoUrl = n.optString("video_url").ifEmpty {
-            n.optJSONArray("video_versions")?.optJSONObject(0)?.optString("url").orEmpty()
-        }
+        val videoUrl = videoUrlOf(n)
         if (videoUrl.isNotEmpty()) {
             return MediaItem(MediaKind.VIDEO, photo, listOf(Variant(videoUrl, "Original", 0)))
         }
